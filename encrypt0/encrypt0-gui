@@ -1,0 +1,86 @@
+#!/bin/bash
+#   Copyright (C) 2015 Piotr Chmielnicki
+#
+#   This program is free software; you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation; either version 3 of the License, or
+#   (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software Foundation,
+#   Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
+
+INPUT="$1"
+
+if [ ! -f "$INPUT" ]
+then
+    INPUT=$(zenity --file-selection --title='Select the file to encrypt')
+    if [ "$?" -ne 0 ]
+    then
+        exit 1
+    fi
+fi
+
+OUTPUT=$INPUT.enc
+PAD_OVERHEAD=144 # See encrypt0.go
+MIN_PAD_SIZE=$(( $(stat --format %s ${INPUT}) + ${PAD_OVERHEAD} ))
+if [ -e $OUTPUT ]
+then
+    if zenity --question --title='Warning' --text="$OUTPUT exists. Do you want to Overwrite it ?"
+    then
+        rm -rf $OUTPUT
+    else
+        exit 1
+    fi
+fi
+if [ -z "$CRYPT0_HOME" ]
+then
+    CRYPT0_HOME=~/.crypt0
+fi
+if [ -d $CRYPT0_HOME/peers ]
+then
+    PEERS=()
+    for dir in $CRYPT0_HOME/peers/*
+    do
+        if [ -n "`find $dir -type f -name '*.w.pad' -size +${MIN_PAD_SIZE}c`" ]
+        then
+            PEERS+=("$(basename "$dir")")
+        fi
+    done
+    if [ -n "$PEERS" ]
+    then
+        PEER=$(zenity --list --title='Select a peer' --text='Peer to encrypt the file for (or cancel to manually choose a pad)' --column='Peer' --hide-header "${PEERS[@]}")
+        if [ -n "$PEER" ]
+        then
+            PEER=$(echo "$PEER" | cut -d '|' -f 1) 
+			PAD="$(ls -S -r $(find "${CRYPT0_HOME}/peers/${PEER}/" -type f -name '*.w.pad' -size +${MIN_PAD_SIZE}c) | head -n 1)"
+        fi
+    fi
+fi
+if [ -z "$PAD" ]
+then
+    PAD=$(zenity --file-selection --title='Select the pad to use' --file-filter='*.w.pad')
+fi
+if [ -z "$PAD" ]
+then
+    exit 1
+fi
+OUT=$(encrypt0 "$INPUT" "$PAD" 2>&1)
+if [ "$?" -ne 0 ]
+then
+    rm -f "$OUTPUT"
+    zenity --error --no-markup --title='Encryption failed' --text="$OUT"
+    exit 1
+else
+    if [ -z "$OUT" ]
+    then
+        zenity --info --title='Encryption succeded' --text='Encryption succeded' 
+    else
+        zenity --info --no-markup --title='Encryption succeded' --text="$OUT" 
+    fi
+fi
