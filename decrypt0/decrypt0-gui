@@ -15,63 +15,63 @@
 #   along with this program; if not, write to the Free Software Foundation,
 #   Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301  USA
 
-INPUT="$1"
+INPUT="${1}"
 
-if [ ! -f "$INPUT" ]
+if [ ! -f "${INPUT}" ]
 then
-    INPUT=$(zenity --file-selection --title='Select the file to decrypt'  --file-filter='*.enc')
+    INPUT="$(zenity --file-selection --title='Select the file to decrypt'  --file-filter='*.enc')"
     if [ "$?" -ne 0 ]
     then
         exit 1
     fi
 fi
-if [ -z "`echo $INPUT | grep '\.enc$'`" ]
+if [ -z "`echo "${INPUT}" | grep '\.enc$'`" ]
 then
-    zenity --error --no-markup --title='Not a ciphertext' --text="$INPUT is no a .enc file !" 
+    zenity --error --no-markup --title='Not a ciphertext' --text="${INPUT} is no a .enc file !" 
     exit 1
 fi
-OUTPUT=$(echo $INPUT | sed 's/\.enc$//')
-if [ -e "$OUTPUT" ]
+OUTPUT=$(echo "${INPUT}" | sed 's/\.enc$//')
+if [ -e "${OUTPUT}" ]
 then
-    if zenity --question --title='Warning' --text="$OUTPUT exists. Do you want to Overwrite it ?"
+    if zenity --question --title='Warning' --text="${OUTPUT} exists. Do you want to Overwrite it ?"
     then
-        rm -rf $OUTPUT
+        rm -rf "${OUTPUT}"
     else
         exit 1
     fi
 fi
-if [ -z "$CRYPT0_HOME" ]
+if [ -z "${CRYPT0_HOME}" ]
 then
     CRYPT0_HOME=~/.crypt0
 fi
-if [ -d $CRYPT0_HOME/peers ]
+if [ -d "${CRYPT0_HOME}/peers" ]
 then
-    for DIR in $CRYPT0_HOME/peers/*
+    for DIR in "${CRYPT0_HOME}"/peers/*
     do
-        decrypt0 "$INPUT" "$DIR"
+        decrypt0 "${INPUT}" "${DIR}"
         if [ "$?" -eq 0 ]
         then
-            zenity --info --no-markup --title='Decryption succeded' --text="Decryption succeded from `basename "$DIR"`"
+            zenity --info --no-markup --title='Decryption succeded' --text="Decryption succeded from `basename "${DIR}"`"
             exit 0
         fi
     done
 fi
 PAD_DIR=$(zenity --file-selection --title='Directory containing pad' --directory)
-if [ -z "$PAD_DIR" ]
+if [ -z "${PAD_DIR}" ]
 then
     exit 1
 fi
-OUT=$(decrypt0 "$INPUT" "$PAD_DIR" 2>&1)
+OUT=$(decrypt0 "${INPUT}" "${PAD_DIR}" 2>&1)
 if [ "$?" -ne 0 ]
 then
-    rm -f "$OUTPUT"
-    zenity --error --no-markup --title='Decryption failed' --text="$OUT"
+    rm -f "${OUTPUT}"
+    zenity --error --no-markup --title='Decryption failed' --text="${OUT}"
     exit 1
 else
-    if [ -z "$OUT" ]
+    if [ -z "${OUT}" ]
     then
         zenity --info --title='Decryption succeded' --text='Decryption succeded'
     else
-        zenity --info --no-markup --title='Decryption succeded' --text="$OUT" 
+        zenity --info --no-markup --title='Decryption succeded' --text="${OUT}" 
     fi
 fi

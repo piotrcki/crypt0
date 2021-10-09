@@ -36,6 +36,8 @@ Y is increased when new features are added.
 
 Z is increased when for minor changes such as bug fixes or code clean-ups.
 
+* 0.3.2
+  * GUI scripts cleaning
 * 0.3.1
   * Improvement of the GUI wrapper for encryption
 * 0.3.0
